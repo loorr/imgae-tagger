@@ -1,4 +1,5 @@
 import { createRouter, createWebHashHistory, RouteRecordRaw } from 'vue-router'
+import MainPage from "../pages/MainPage.vue";
 
 const routes: Array<RouteRecordRaw> = [
     // {
@@ -6,7 +7,7 @@ const routes: Array<RouteRecordRaw> = [
     //     name: 'Home',
     //     component: () => import(/* webpackChunkName: "Home" */ '@/views/home.vue')
     // },
-    // { path: '/', redirect: { name: 'Home' } }
+    { path: '/', component:MainPage}
 ]
 
 const router = createRouter({
