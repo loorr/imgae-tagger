@@ -1,6 +1,8 @@
 <template>
     <div>
         <el-button type="primary" @click="onClick1">刷  新</el-button>
+        <el-button type="primary" @click="cancelBefore">向前撤销</el-button>
+        <el-button type="primary" @click="cancelAfter">向后撤销</el-button>
         <canvas id="my-canvas"></canvas>
     </div>
 </template>
@@ -10,6 +12,9 @@
 
     let canvas= null;
     let currDrawingRect = null;
+    let leableModel = {
+
+    };
 
     export default defineComponent({
         name: "CanvasComponent",
@@ -23,6 +28,10 @@
                     "https://n.sinaimg.cn/finance/transform/562/w360h202/20210907/09f1-e8b3191011591725e2ffbf968083d340.jpg"
                 ],
                 currImgUrl: 'https://www.thisiscolossal.com/wp-content/uploads/2021/09/yoshida-4-960x588@2x.jpg',
+                // 存储标签位置
+                labelList:[
+
+                ],
                 mouseFrom:{
                     x:0,
                     y:0
@@ -37,7 +46,9 @@
                 actions:{
                     drag: false,
                     select: false,
-                }
+                },
+                preRect:null,
+                afterRect:null
             }
         },
 
@@ -70,7 +81,7 @@
                 );
 
                 // 当选择画布中的对象时，该对象不出现在顶层
-                canvas.preserveObjectStacking = true;
+                canvas.preserveObjectStacking = false;
 
                 // 使用本地图片
                 // let imgUrl = require('../assets/cc.jpg');
@@ -109,9 +120,29 @@
                     'object:cleared':(e) => this.handleObjectCleared(e),
                 });
             },
+            cancelBefore(){
+                if (canvas.size() == 0) return;
+                console.debug("cancelBefore " + canvas.size() + " " + canvas.item(1))
+                let beforeIndex = canvas.size() -1;
+                let rectTemp = canvas.item(beforeIndex);
+                this.afterRect = rectTemp;
+                canvas.remove(rectTemp);
+            },
+            cancelAfter(){
+                if (this.afterRect == null) return;
+                canvas.add(this.afterRect);
+                this.afterRect = null;
+            },
             onClick1() {
-                canvas.clear();
+                // canvas.clear();
+                const objects = canvas.getObjects('rect');
+                for (let i in objects) {
+                    canvas.remove(objects[i]);
+                }
                 console.log("121");
+                this.moveCount = 1;
+                this.doDrawing = false;
+                this.actions.select = false;
             },
             handleMouseDown(e){
                 console.log("handleMouseDown");
@@ -120,10 +151,24 @@
             },
             handleMouseUp(e){
                 console.log("1212");
+                // 判断本次绘制的大小
+                // let position = currDrawingRect.get('position')
+                console.debug("position s " + currDrawingRect);
+
+                if (currDrawingRect != null){
+                    if (currDrawingRect.width < 10 || currDrawingRect.height < 10) {
+                        this.cancelBefore();
+                    }
+                }
+
+                // console.debug("position e " + currDrawingRect.width  + " " + currDrawingRect.height);
                 this.moveCount = 1;
                 this.doDrawing = false;
+                this.afterRect = null;
+                this.preRect = currDrawingRect;
                 currDrawingRect = null;
                 this.actions.select = false;
+                console.debug("对象取消选中，置为false");
             },
             handleObjectMoving(e){
                 if (this.actions.select) return;
@@ -163,6 +208,7 @@
 
                 newRect = this.setRect(x, y, width, height);
                 newRect.setControlsVisibility({mtr: false})
+                // 绘制
                 if (newRect){
                     canvas.add(newRect);
                     currDrawingRect = newRect;
@@ -198,6 +244,19 @@
                     }
                 );
                 rect.on('selected',(e)=>{
+                    console.debug("对象被选中")
+                    if (this.actions.select) return;
+                    this.actions.select = true;
+                });
+                rect.on('scaling',(e)=>{
+                    console.debug("对象被scaling")
+                    if (this.actions.select) return;
+                    this.actions.select = true;
+                });
+
+                rect.on('moving', (e)=>{
+                    console.debug("对象移动")
+                    if (this.actions.select) return;
                     this.actions.select = true;
                 });
                 return rect;
