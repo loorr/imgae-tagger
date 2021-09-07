@@ -9,12 +9,14 @@
   "dependencies": {
     "axios": "^0.21.3",
     "element-plus": "^1.1.0-beta.9",
+    "fabric": "^4.6.0",
     "vue": "^3.2.6",
     "vue-router": "4",
     "vuex": "^4.0.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss7-compat": "^2.2.9",
+    "@types/fabric": "^4.5.3",
     "@types/node": "^16.7.10",
     "@vitejs/plugin-vue": "^1.6.0",
     "@vue/compiler-sfc": "^3.2.6",
