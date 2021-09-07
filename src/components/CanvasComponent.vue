@@ -9,6 +9,7 @@
     import {defineComponent} from 'vue';
 
     let canvas= null;
+    let currDrawingRect = null;
 
     export default defineComponent({
         name: "CanvasComponent",
@@ -22,6 +23,21 @@
                     "https://n.sinaimg.cn/finance/transform/562/w360h202/20210907/09f1-e8b3191011591725e2ffbf968083d340.jpg"
                 ],
                 currImgUrl: 'https://www.thisiscolossal.com/wp-content/uploads/2021/09/yoshida-4-960x588@2x.jpg',
+                mouseFrom:{
+                    x:0,
+                    y:0
+                },
+                mouseTo:{
+                    x:0,
+                    y:0
+                },
+
+                doDrawing: false,
+                moveCount: 1,
+                actions:{
+                    drag: false,
+                    select: false,
+                }
             }
         },
 
@@ -46,7 +62,7 @@
                         originX: "center",
                         originY: "center",
                         backgroundColor: "#2b2b2b",
-                        transparentCorners: false,
+                        // transparentCorners: false,
                         uniformScaling: false, // 等比例缩放
                         enableRetinaScaling: false,
                         selection: false // 禁止组选择
@@ -78,7 +94,7 @@
                     /** 鼠标按下 */
                     'mouse:down':(e)=> this.handleMouseDown(e),
                     /** 鼠标移动 */
-                    'mouse:move':(e)=> this.handleMouseMove(e),
+                    'mouse:move':(e)=> this.handleObjectMoving(e),
                     /** 鼠标抬起 */
                     'mouse:up':(e) => this.handleMouseUp(e),
                     /** 对象移动 */
@@ -98,14 +114,24 @@
                 console.log("121");
             },
             handleMouseDown(e){
-                e.pointer.
-                console.log("1212");
+                console.log("handleMouseDown");
+                this.doDrawing = true;
+                this.mouseFrom = this.limitPoint(e.pointer.x, e.pointer.y);
             },
             handleMouseUp(e){
                 console.log("1212");
+                this.moveCount = 1;
+                this.doDrawing = false;
+                currDrawingRect = null;
+                this.actions.select = false;
             },
             handleObjectMoving(e){
-                console.log("1212");
+                if (this.actions.select) return;
+                if (this.moveCount%10 != 0 && !this.doDrawing) return;
+                console.log("handleObjectMoving");
+                this.moveCount++;
+                this.mouseTo = this.limitPoint(e.pointer.x, e.pointer.y);
+                this.drawingRect();
             },
             handleObjectModified(e){
                 console.log("1212");
@@ -121,6 +147,64 @@
             },
             handleObjectCleared(e){
                 console.log("1212");
+            },
+            drawingRect(){
+                if (currDrawingRect){
+                    canvas.remove(currDrawingRect);
+                }
+                let newRect = null;
+                let x = this.mouseFrom.x < this.mouseTo.x ? this.mouseFrom.x : this.mouseTo.x;
+                if (x < 0) x = 0;
+                let y = this.mouseFrom.y < this.mouseTo.y ? this.mouseFrom.y : this.mouseTo.y;
+                if (y < 0) y = 0;
+
+                let width = Math.abs(this.mouseTo.x - this.mouseFrom.x);
+                let height = Math.abs(this.mouseTo.y - this.mouseFrom.y);
+
+                newRect = this.setRect(x, y, width, height);
+                newRect.setControlsVisibility({mtr: false})
+                if (newRect){
+                    canvas.add(newRect);
+                    currDrawingRect = newRect;
+                    let position = {
+                        x:x,
+                        y:y,
+                        width:width,
+                        height:height
+                    }
+                    currDrawingRect.set('position', position)
+                };
+            },
+            limitPoint(x, y){
+                return {x:x, y:y};
+            },
+            setRect(left, top, width, height, color, lineWidth){
+                let rect = new fabric.Rect(
+                    {
+                        left: left,
+                        top: top,
+                        width: width,
+                        height: height,
+                        fill:'rgba(232,103,103,0.4)',
+                        stroke: color || '#FD9D91',
+                        strokeUniform: true,
+                        strokeWidth: lineWidth || 3,
+                        transparentCorners: false,
+                        cornerColor:'rgba(255,255,255,1)',
+                        cornerStrokeColor:'#409eff',
+                        borderColor:'#409eff',
+                        padding:0,
+                        cornerStyle:'circle'
+                    }
+                );
+                rect.on('selected',(e)=>{
+                    this.actions.select = true;
+                });
+                return rect;
+            },
+            drag(e){
+                if (!this.actions.drag) return;
+
             }
         }
     })
