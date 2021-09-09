@@ -1,17 +1,21 @@
 /** 绘图状态枚举 */
 export const DrawMode =  {
-    SELECT:0,
-    RECT:1,
-    CIRCLE:2,
-    POLYGO:3
+    SELECT:"SELECT",
+    RECT:"RECT",
+    CIRCLE:"CIRCLE",
+    POLYGO:"POLYGO"
 }
 Object.freeze(DrawMode);
 
 export const ImageAdaptMode = {
     /** 图像适应窗口 */
-    ADAPT_WINDOW:0,
+    ADAPT_WINDOW:"ADAPT_WINDOW",
     /** 图像最大化 */
-    ADAPT_MAX:1
+    ADAPT_MAX:"ADAPT_MAX"
+}
+
+export function checkMember(enumObject, value) {
+    return Object.values(enumObject).includes(value);
 }
 
 /**

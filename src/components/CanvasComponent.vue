@@ -5,11 +5,10 @@
           <p>2. 移动和图形操作是互斥的</p>
         </div>
         <div class="menu">
-            <el-button type="primary" plain>移动</el-button>
-            <el-button type="primary" plain>矩形(Rect)</el-button>
-            <el-button type="primary" plain>圆形(Circle)</el-button>
-            <el-button type="primary" plain>五角星</el-button>
-            <el-button type="primary" plain>多边形</el-button>
+            <el-button type="primary" plain @click="drawTypeChange('SELECT')">移动</el-button>
+            <el-button type="primary" plain @click="drawTypeChange('RECT')">矩形(Rect)</el-button>
+            <el-button type="primary" plain @click="drawTypeChange('CIRCLE')">圆形(Circle)</el-button>
+            <el-button type="primary" plain @click="drawTypeChange('POLYGO')">多边形</el-button>
 
             <el-button type="primary" plain>放大</el-button>
             <el-button type="primary" plain>缩小</el-button>
@@ -29,7 +28,7 @@
 
 <script >
     import {defineComponent} from 'vue';
-    import {adaptFatherSize, adaptMaxSize, DrawMode, ImageAdaptMode} from "../common/canvas";
+    import {adaptFatherSize, adaptMaxSize, checkMember, DrawMode, ImageAdaptMode} from "../common/canvas";
     let canvas= null;
     let currDrawingRect = null;
     let leableModel = {
@@ -351,6 +350,12 @@
                 canvas.add(image);
                 canvas.sendToBack(image);
                 this.imageAdaptState = ImageAdaptMode.ADAPT_MAX;
+            },
+            drawTypeChange(e){
+                if (this.menuState === e) return;
+                if (!checkMember(DrawMode, e)) return;
+                this.menuState = e;
+                console.log(this.menuState)
             }
         }
     })
