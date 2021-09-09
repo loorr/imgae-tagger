@@ -5,27 +5,31 @@
           <p>2. 移动和图形操作是互斥的</p>
         </div>
         <div class="menu">
-          <el-button type="primary" plain>移动</el-button>
-          <el-button type="primary" plain>矩形(Rect)</el-button>
-          <el-button type="primary" plain>圆形(Circle)</el-button>
-          <el-button type="primary" plain>五角星</el-button>
-          <el-button type="primary" plain>多边形</el-button>
+            <el-button type="primary" plain>移动</el-button>
+            <el-button type="primary" plain>矩形(Rect)</el-button>
+            <el-button type="primary" plain>圆形(Circle)</el-button>
+            <el-button type="primary" plain>五角星</el-button>
+            <el-button type="primary" plain>多边形</el-button>
 
-          <el-button type="primary" plain>放大</el-button>
-          <el-button type="primary" plain>缩小</el-button>
-          <el-button type="primary" plain @click="onClick1">刷  新</el-button>
-          <el-button type="primary" plain @click="cancelBefore">向前撤销</el-button>
-          <el-button type="primary" plain @click="cancelAfter">向后撤销</el-button>
+            <el-button type="primary" plain>放大</el-button>
+            <el-button type="primary" plain>缩小</el-button>
+            <el-button type="primary" plain @click="onClick1">刷  新</el-button>
+            <el-button type="primary" plain @click="cancelBefore">向前撤销</el-button>
+            <el-button type="primary" plain @click="cancelAfter">向后撤销</el-button>
+
+            <el-button type="primary" plain @click="backImageAdaptWindow">图片适应窗口(默认)</el-button>
+            <el-button type="primary" plain @click="backImageAdaptMax">图片最大化</el-button>
         </div>
         <div class="canvas">
-          <canvas id="my-canvas"></canvas>
+            <img id="img"  v-show="false" :src="currImgUrl" />
+            <canvas id="my-canvas"></canvas>
         </div>
     </div>
 </template>
 
 <script >
     import {defineComponent} from 'vue';
-    import {DrawMode} from "../common/canvas";
+    import {adaptFatherSize, adaptMaxSize, DrawMode, ImageAdaptMode} from "../common/canvas";
     let canvas= null;
     let currDrawingRect = null;
     let leableModel = {
@@ -37,13 +41,15 @@
         data(){
             return {
                 // 当前操作的状态
-                state:{
-                    move:true,
-                    rect:false,
-                    circle:false,
-                },
+                menuState: DrawMode.SELECT,
+                imageAdaptState: ImageAdaptMode.ADAPT_WINDOW,
+                // 画布的长宽
                 width: 600,
-                height: 400,
+                height: 500,
+                // 图像的宽高
+                picWidth:0,
+                picHeight:0,
+
                 imgListIndex:0,
                 imgList:[
                     'https://www.thisiscolossal.com/wp-content/uploads/2021/09/yoshida-4-960x588@2x.jpg',
@@ -77,6 +83,7 @@
         mounted() {
             // 初始化画布
             this.initCanvas();
+            this.initImage();
             // 监听画布事件
             this.fabricObjEvent();
         },
@@ -90,8 +97,8 @@
                 canvas = new fabric.Canvas(
                     'my-canvas',
                     {
-                        width: 600,
-                        height: 400,
+                        width: this.width,
+                        height: this.height,
                         originX: "center",
                         originY: "center",
                         backgroundColor: "#2b2b2b",
@@ -110,22 +117,47 @@
                 // 使用网络图片
                 let imgUrl = this.currImgUrl;
                 const center = canvas.getCenter();
-                fabric.Image.fromURL(imgUrl, (img, err) => {
-                    if(err) {
-                        canvas.setBackgroundColor('rgba(85, 107, 198, 0.6)',
-                            canvas.renderAll.bind(canvas))
-                    }else {
-                        canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
-                            scaleX: 0.8* (canvas.width / img.width),
-                            scaleY: 0.8* (canvas.height / img.height),
-                            top: center.top,
-                            left: center.left,
-                            originX: 'center',
-                            originY: 'center',
-                            crossOrigin: 'anonymous' // 使用的图片跨域时，配置此参数
-                        });
-                    }
-                });
+                canvas.setBackgroundColor('rgba(241,55,92,0.07)', canvas.renderAll.bind(canvas))
+                // fabric.Image.fromURL(imgUrl, (img, err) => {
+                //     if(err) {
+                //         canvas.setBackgroundColor('rgba(85, 107, 198, 0.6)', canvas.renderAll.bind(canvas))
+                //     }else {
+                //         const backImage = canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
+                //             scaleX: (canvas.width / img.width),
+                //             scaleY: (canvas.height / img.height),
+                //             top: center.top,
+                //             left: center.left,
+                //             originX: 'center',
+                //             originY: 'center',
+                //             crossOrigin: 'anonymous' // 使用的图片跨域时，配置此参数
+                //         });
+                //         // console.log(backImage)
+                //         const m = canvas.backgroundImage;
+                //
+                //
+                //     }
+                // });
+
+            },
+            initImage(){
+                const imgElement = document.getElementById("img");
+                imgElement.onload = () => {
+                    this.picWidth = imgElement.width;
+                    this.picHeight = imgElement.height;
+                    const size = adaptFatherSize(this.width,this.height, this.picWidth, this.picHeight)
+                    const center = canvas.getCenter();
+                    const imgInstance = new fabric.Image(imgElement, {
+                        zIndex: -1,
+                        selectable: false,
+                        scaleX:size.rate,
+                        scaleY:size.rate,
+                        top: center.top,
+                        left: center.left,
+                        originX: 'center',
+                        originY: 'center',
+                    });
+                    canvas.add(imgInstance);
+                };
             },
             fabricObjEvent(){
                 canvas.on({
@@ -147,19 +179,7 @@
                     'object:cleared':(e) => this.handleObjectCleared(e),
                 });
             },
-            cancelBefore(){
-                if (canvas.size() == 0) return;
-                console.debug("cancelBefore " + canvas.size() + " " + canvas.item(1))
-                let beforeIndex = canvas.size() -1;
-                let rectTemp = canvas.item(beforeIndex);
-                this.afterRect = rectTemp;
-                canvas.remove(rectTemp);
-            },
-            cancelAfter(){
-                if (this.afterRect == null) return;
-                canvas.add(this.afterRect);
-                this.afterRect = null;
-            },
+
             onClick1() {
                 // canvas.js.clear();
                 const objects = canvas.getObjects('rect');
@@ -172,7 +192,7 @@
                 this.actions.select = false;
             },
             handleMouseDown(e){
-                console.log("handleMouseDown");
+                console.log("handleMouseDown ", e.pointer.x, e.pointer.y);
                 this.doDrawing = true;
                 this.mouseFrom = this.limitPoint(e.pointer.x, e.pointer.y);
             },
@@ -291,6 +311,46 @@
             drag(e){
                 if (!this.actions.drag) return;
 
+            },
+
+            // 非核心函数
+            /** 获取绘制图层数量
+             *  相当于绘制的元素下标从1开始
+             */
+            getLayerSize(){
+                return canvas.size() - 1;
+            },
+            cancelBefore(){
+                let size = this.getLayerSize();
+                if (size == 0) return;
+                let rectTemp = canvas.item(size);
+                this.afterRect = rectTemp;
+                canvas.remove(rectTemp);
+            },
+            cancelAfter(){
+                if (this.afterRect == null) return;
+                canvas.add(this.afterRect);
+                this.afterRect = null;
+            },
+            backImageAdaptWindow(){
+                if (ImageAdaptMode.ADAPT_WINDOW === this.imageAdaptState) return;
+                let image = canvas.item(0);
+                let size = adaptFatherSize(this.width,this.height, this.picWidth, this.picHeight)
+                canvas.remove(image);
+                image.scale(size.rate);
+                canvas.add(image);
+                canvas.sendToBack(image);
+                this.imageAdaptState = ImageAdaptMode.ADAPT_WINDOW;
+            },
+            backImageAdaptMax(){
+                if (ImageAdaptMode.ADAPT_MAX === this.imageAdaptState) return;
+                let size = adaptMaxSize(this.width,this.height, this.picWidth, this.picHeight)
+                let image = canvas.item(0);
+                canvas.remove(image);
+                image.scale(size.rate);
+                canvas.add(image);
+                canvas.sendToBack(image);
+                this.imageAdaptState = ImageAdaptMode.ADAPT_MAX;
             }
         }
     })
@@ -298,8 +358,8 @@
 
 <style scoped>
     #my-canvas{
-        width:1200px;
-        height:800px;
+        /*width:1200px;*/
+        /*height:800px;*/
         border-color: #42b983;
         border-width: 3px;
         margin-top: 20px;
