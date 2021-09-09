@@ -1,15 +1,31 @@
 <template>
     <div>
-        <el-button type="primary" @click="onClick1">刷  新</el-button>
-        <el-button type="primary" @click="cancelBefore">向前撤销</el-button>
-        <el-button type="primary" @click="cancelAfter">向后撤销</el-button>
-        <canvas id="my-canvas"></canvas>
+        <div class="introduce">
+          <p>1. 默认进入画布是 移动 这个状态</p>
+          <p>2. 移动和图形操作是互斥的</p>
+        </div>
+        <div class="menu">
+          <el-button type="primary" plain>移动</el-button>
+          <el-button type="primary" plain>矩形(Rect)</el-button>
+          <el-button type="primary" plain>圆形(Circle)</el-button>
+          <el-button type="primary" plain>五角星</el-button>
+          <el-button type="primary" plain>多边形</el-button>
+
+          <el-button type="primary" plain>放大</el-button>
+          <el-button type="primary" plain>缩小</el-button>
+          <el-button type="primary" plain @click="onClick1">刷  新</el-button>
+          <el-button type="primary" plain @click="cancelBefore">向前撤销</el-button>
+          <el-button type="primary" plain @click="cancelAfter">向后撤销</el-button>
+        </div>
+        <div class="canvas">
+          <canvas id="my-canvas"></canvas>
+        </div>
     </div>
 </template>
 
 <script >
     import {defineComponent} from 'vue';
-
+    import {DrawMode} from "../common/canvas";
     let canvas= null;
     let currDrawingRect = null;
     let leableModel = {
@@ -20,6 +36,12 @@
         name: "CanvasComponent",
         data(){
             return {
+                // 当前操作的状态
+                state:{
+                    move:true,
+                    rect:false,
+                    circle:false,
+                },
                 width: 600,
                 height: 400,
                 imgListIndex:0,
@@ -87,14 +109,19 @@
                 // let imgUrl = require('../assets/cc.jpg');
                 // 使用网络图片
                 let imgUrl = this.currImgUrl;
+                const center = canvas.getCenter();
                 fabric.Image.fromURL(imgUrl, (img, err) => {
                     if(err) {
                         canvas.setBackgroundColor('rgba(85, 107, 198, 0.6)',
                             canvas.renderAll.bind(canvas))
                     }else {
                         canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
-                            scaleX: 0.8* canvas.width / img.width,
-                            scaleY: 0.8* canvas.height / img.height,
+                            scaleX: 0.8* (canvas.width / img.width),
+                            scaleY: 0.8* (canvas.height / img.height),
+                            top: center.top,
+                            left: center.left,
+                            originX: 'center',
+                            originY: 'center',
                             crossOrigin: 'anonymous' // 使用的图片跨域时，配置此参数
                         });
                     }
@@ -134,7 +161,7 @@
                 this.afterRect = null;
             },
             onClick1() {
-                // canvas.clear();
+                // canvas.js.clear();
                 const objects = canvas.getObjects('rect');
                 for (let i in objects) {
                     canvas.remove(objects[i]);
@@ -273,5 +300,14 @@
     #my-canvas{
         width:1200px;
         height:800px;
+        border-color: #42b983;
+        border-width: 3px;
+        margin-top: 20px;
+        margin-left: 20%;
+    }
+    .introduce{
+        margin-top: 20px;
+        text-align: left;
+        margin-bottom: 20px;
     }
 </style>
