@@ -18,6 +18,7 @@
 
             <el-button type="primary" plain @click="backImageAdaptWindow">图片适应窗口(默认)</el-button>
             <el-button type="primary" plain @click="backImageAdaptMax">图片最大化</el-button>
+            <el-slider v-model="picZoomRate" step="0.1" max="4" @change="zoomImage"></el-slider>
         </div>
         <div class="canvas">
             <img id="img"  v-show="false" :src="currImgUrl" />
@@ -48,6 +49,8 @@
                 // 图像的宽高
                 picWidth:0,
                 picHeight:0,
+                // 图像缩放比例
+                picZoomRate: 0,
 
                 imgListIndex:0,
                 imgList:[
@@ -145,6 +148,8 @@
                     this.picHeight = imgElement.height;
                     const size = adaptFatherSize(this.width,this.height, this.picWidth, this.picHeight)
                     const center = canvas.getCenter();
+                    this.picZoomRate = size.rate;
+                    console.log("this.picZoomRate ", this.picZoomRate)
                     const imgInstance = new fabric.Image(imgElement, {
                         zIndex: -1,
                         selectable: false,
@@ -176,6 +181,7 @@
                     'object:updated':(e) => this.handleObjectUpdated(e),
                     /** 对象取消选中 */
                     'object:cleared':(e) => this.handleObjectCleared(e),
+                    "mouse:wheel":(e)=> this.handleMouseWheel(e),
                 });
             },
 
@@ -239,6 +245,18 @@
             handleObjectCleared(e){
                 console.log("1212");
             },
+            /** 鼠标滚动缩放 */
+            handleMouseWheel(e){
+                let event = e.e;
+                let zoom = (event.deltaY > 0 ? -0.1 : 0.1) + canvas.getZoom();
+                zoom = Math.max(0.1, zoom); //最小为原来的1/10
+                zoom = Math.min(2, zoom); //最大是原来的3倍
+                let zoomPoint = new fabric.Point(event.pageX, event.pageY);
+                console.log(event.pageX, " ",event.pageY)
+                canvas.zoomToPoint(zoomPoint, zoom);
+            },
+
+            // 绘图核心
             drawingRect(){
                 if (currDrawingRect){
                     canvas.remove(currDrawingRect);
@@ -286,7 +304,7 @@
                         cornerStrokeColor:'#409eff',
                         borderColor:'#409eff',
                         padding:0,
-                        cornerStyle:'circle'
+                        // cornerStyle:'circle'
                     }
                 );
                 rect.on('selected',(e)=>{
@@ -337,6 +355,7 @@
                 let size = adaptFatherSize(this.width,this.height, this.picWidth, this.picHeight)
                 canvas.remove(image);
                 image.scale(size.rate);
+                this.picZoomRate = size.rate;
                 canvas.add(image);
                 canvas.sendToBack(image);
                 this.imageAdaptState = ImageAdaptMode.ADAPT_WINDOW;
@@ -347,16 +366,27 @@
                 let image = canvas.item(0);
                 canvas.remove(image);
                 image.scale(size.rate);
+                this.picZoomRate = size.rate;
                 canvas.add(image);
                 canvas.sendToBack(image);
                 this.imageAdaptState = ImageAdaptMode.ADAPT_MAX;
+            },
+
+            zoomImage(rate){
+                console.log("rate ", rate)
+                let image = canvas.item(0);
+                canvas.remove(image);
+                image.scale(rate);
+                canvas.sendToBack(image);
             },
             drawTypeChange(e){
                 if (this.menuState === e) return;
                 if (!checkMember(DrawMode, e)) return;
                 this.menuState = e;
                 console.log(this.menuState)
-            }
+                this.imageAdaptState = ImageAdaptMode.FREE_STATE;
+            },
+
         }
     })
 </script>

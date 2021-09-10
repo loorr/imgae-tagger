@@ -11,7 +11,8 @@ export const ImageAdaptMode = {
     /** 图像适应窗口 */
     ADAPT_WINDOW:"ADAPT_WINDOW",
     /** 图像最大化 */
-    ADAPT_MAX:"ADAPT_MAX"
+    ADAPT_MAX:"ADAPT_MAX",
+    FREE_STATE:"FREE_STATE",
 }
 
 export function checkMember(enumObject, value) {
